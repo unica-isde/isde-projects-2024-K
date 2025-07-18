@@ -1,5 +1,7 @@
 import json
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File
+import shutil
+import uuid
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -53,5 +55,30 @@ async def request_classification(request: Request):
             "request": request,
             "image_id": image_id,
             "classification_scores": json.dumps(classification_scores),
+        },
+    )
+
+@app.get("/upload", response_class = HTMLResponse)
+def upload_form(request : Request):
+    return templates.TemplateResponse("upload_form.html",{"request": request})
+
+@app.post("/upload", response_class=HTMLResponse)
+async def handle_upload(request: Request, file: UploadFile = File(...)):
+    filename = f"{uuid.uuid4().hex}_{file.filename}"
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Use classify_image function
+    from app.ml.classification_utils import classify_image
+    results = classify_image("resnet18", f"uploads/{filename}")  # pass relative path
+
+    return templates.TemplateResponse(
+        "upload_result.html",
+        {
+            "request": request,
+            "image_url": f"/static/uploads/{filename}",
+            "results": results,
         },
     )

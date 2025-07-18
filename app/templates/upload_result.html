@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Classification Results</title></head>
+<body>
+  <h2>Classification Results</h2>
+  <img src="{{ image_url }}" alt="Uploaded Image" style="max-width: 300px;"><br><br>
+
+  <ul>
+    {% for label, score in results %}
+      <li>{{ label }} — {{ '%.2f'|format(score) }}%</li>
+    {% endfor %}
+  </ul>
+
+  <a href="/upload">Classify another image</a> |
+  <a href="/">Home</a>
+</body>
+</html>
