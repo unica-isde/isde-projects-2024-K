@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.config import Configuration
+from app.forms.upload_form import UploadForm
 from app.forms.classification_form import ClassificationForm
 from app.ml.classification_utils import classify_image
 from app.utils import list_images
@@ -65,7 +66,8 @@ async def request_classification(request: Request):
 
 @app.get("/upload", response_class = HTMLResponse)
 def upload_form(request : Request):
-    return templates.TemplateResponse("upload_form.html",{"request": request})
+    return templates.TemplateResponse("upload_form.html",
+                                      {"request": request, "images": list_images(), "models": Configuration.models})
 
 @app.post("/upload", response_class=HTMLResponse)
 async def handle_upload(request: Request, file: UploadFile = File(...)):
@@ -77,7 +79,12 @@ async def handle_upload(request: Request, file: UploadFile = File(...)):
 
     # Use classify_image function
     from app.ml.classification_utils import classify_image
-    results = classify_image("resnet18", filename) 
+    form = UploadForm(request)
+    await form.load_data()
+    model_id = form.model_id
+    
+    
+    results = classify_image(model_id, filename) 
 
     return templates.TemplateResponse(
         "upload_result.html",

@@ -6,6 +6,12 @@
   <form action="/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="file" accept="image/*" required>
     <button type="submit">Upload and Classify</button>
+
+    <select name="model_id">
+        {% for model in models %}
+            <option value="{{ model }}" SELECTED>{{ model }}</option>
+        {% endfor %}     
+    </select>
   </form>
   <a href="/">Go back</a>
 </body>
