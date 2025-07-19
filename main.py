@@ -2,6 +2,7 @@ import json
 from fastapi import FastAPI, Request, UploadFile, File
 import shutil
 import uuid
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from fastapi.responses import HTMLResponse, FileResponse
@@ -15,6 +16,8 @@ from app.utils import list_images
 
 app = FastAPI()
 config = Configuration()
+UPLOAD_FOLDER = os.path.join(Configuration().image_folder_path)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
@@ -74,13 +77,13 @@ async def handle_upload(request: Request, file: UploadFile = File(...)):
 
     # Use classify_image function
     from app.ml.classification_utils import classify_image
-    results = classify_image("resnet18", f"uploads/{filename}")  # pass relative path
+    results = classify_image("resnet18", filename) 
 
     return templates.TemplateResponse(
         "upload_result.html",
         {
             "request": request,
-            "image_url": f"/static/uploads/{filename}",
+            "image_url": f"/static/imagenet_subset/{filename}",
             "results": results,
         },
     )
