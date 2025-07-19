@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Histogram Result</title></head>
+<body>
+  <h2>Histogram for {{ image_id }}</h2>
+
+  <p>Original Image:</p>
+  <img src="{{ image_path }}" alt="Original Image" style="max-width:300px;">
+
+  <p>Generated Histogram:</p>
+  <img src="{{ histogram_path }}" alt="Histogram" style="max-width:300px;">
+
+  <br><br>
+  <a href="/histogram">Try another image</a> |
+  <a href="/">Home</a>
+</body>
+</html>

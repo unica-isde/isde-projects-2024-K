@@ -2,7 +2,9 @@ import json
 from fastapi import FastAPI, Request, UploadFile, File
 import shutil
 import uuid
-from fastapi.responses import HTMLResponse
+import matplotlib.pyplot as plt
+import numpy as np
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.config import Configuration
@@ -80,5 +82,32 @@ async def handle_upload(request: Request, file: UploadFile = File(...)):
             "request": request,
             "image_url": f"/static/uploads/{filename}",
             "results": results,
+        },
+    )
+
+@app.get("/histogram", response_class=HTMLResponse)
+def histogram_form(request: Request):
+    from app.utils import list_images
+    return templates.TemplateResponse(
+        "histogram_form.html",
+        {"request": request, "images": list_images()}
+    )
+
+@app.post("/histogram", response_class=HTMLResponse)
+async def handle_histogram(request: Request):
+    form = await request.form()
+    image_id = form["image_id"]
+
+    from app.ml.histogram_utils import generate_histogram
+
+    histogram_path = generate_histogram(image_id)
+
+    return templates.TemplateResponse(
+        "histogram_result.html",
+        {
+            "request": request,
+            "image_id": image_id,
+            "image_path": f"/static/imagenet_subset/{image_id}",
+            "histogram_path": f"/static/generated/{histogram_path}",
         },
     )
