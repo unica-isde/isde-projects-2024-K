@@ -56,10 +56,30 @@ async def request_classification(request: Request):
     image_id = form.image_id
     model_id = form.model_id
     classification_scores = classify_image(model_id=model_id, img_id=image_id)
+
+    output_folder = "app/static/downloads"
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Save JSON
+    with open(os.path.join(output_folder, f"{image_id}.json"), "w") as f:
+        json.dump(classification_scores, f)
+
+    # Save PNG bar chart
+    labels = [r[0] for r in classification_scores]
+    scores = [r[1] for r in classification_scores]
+    plt.figure()
+    plt.barh(labels[::-1], scores[::-1])  # Reverse to show top at top
+    plt.title("Top-5 Predictions")
+    plt.xlabel("Confidence")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, f"{image_id}.png"))
+    plt.close()
+
     return templates.TemplateResponse(
         "classification_output.html",
         {
             "request": request,
+            "result_id": image_id,
             "image_id": image_id,
             "classification_scores": json.dumps(classification_scores),
         },
@@ -78,14 +98,27 @@ async def handle_upload(request: Request, file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Use classify_image function
-    from app.ml.classification_utils import classify_image
-    form = UploadForm(request)
-    await form.load_data()
-    model_id = form.model_id
-    
-    
-    results = classify_image(model_id, filename) 
+    results = classify_image("resnet18", filename)
+
+    # Save results for download
+    result_id = filename  # reuse filename as ID
+    output_folder = "app/static/downloads"
+    os.makedirs(output_folder, exist_ok=True)
+
+    # 1. Save JSON
+    with open(os.path.join(output_folder, f"{result_id}.json"), "w") as f:
+        json.dump(results, f)
+
+    # 2. Save Plot
+    labels = [r[0] for r in results]
+    scores = [r[1] for r in results]
+    plt.figure()
+    plt.barh(labels[::-1], scores[::-1])  # horizontal bar chart, highest on top
+    plt.title("Top-5 Predictions")
+    plt.xlabel("Confidence (%)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, f"{result_id}.png"))
+    plt.close()
 
     return templates.TemplateResponse(
         "upload_result.html",
@@ -93,6 +126,7 @@ async def handle_upload(request: Request, file: UploadFile = File(...)):
             "request": request,
             "image_url": f"/static/imagenet_subset/{filename}",
             "results": results,
+            "result_id": result_id,  # pass this to template
         },
     )
 
@@ -169,3 +203,13 @@ async def handle_transform(request: Request):
             }
         },
     )
+
+@app.get("/download/json/{result_id}")
+def download_json(result_id: str):
+    path = f"app/static/downloads/{result_id}.json"
+    return FileResponse(path, media_type="application/json", filename="results.json")
+
+@app.get("/download/plot/{result_id}")
+def download_plot(result_id: str):
+    path = f"app/static/downloads/{result_id}.png"
+    return FileResponse(path, media_type="image/png", filename="results.png")
