@@ -1,0 +1,9 @@
+<h2>Transformed Image</h2>
+
+<p>Original:</p>
+<img src="{{ original_path }}" style="max-width:300px;"><br>
+
+<p>Transformed (brightness: {{ params.brightness }}, contrast: {{ params.contrast }}, color: {{ params.color }}, sharpness: {{ params.sharpness }}):</p>
+<img src="{{ transformed_path }}" style="max-width:300px;"><br>
+
+<a href="/transform">Try Another</a> | <a href="/">Home</a>

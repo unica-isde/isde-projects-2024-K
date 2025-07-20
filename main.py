@@ -1,5 +1,6 @@
 import json
 from fastapi import FastAPI, Request, UploadFile, File
+from PIL import Image, ImageEnhance
 import shutil
 import uuid
 import os
@@ -119,5 +120,52 @@ async def handle_histogram(request: Request):
             "image_id": image_id,
             "image_path": f"/static/imagenet_subset/{image_id}",
             "histogram_path": f"/static/generated/{histogram_path}",
+        },
+    )
+
+@app.get("/transform", response_class=HTMLResponse)
+def transform_form(request: Request):
+    return templates.TemplateResponse(
+        "transform_form.html",
+        {"request": request, "images": list_images()}
+    )
+
+@app.post("/transform", response_class=HTMLResponse)
+async def handle_transform(request: Request):
+    form = await request.form()
+    image_id = form["image_id"]
+    brightness = float(form.get("brightness", 1.0))
+    contrast = float(form.get("contrast", 1.0))
+    color = float(form.get("color", 1.0))
+    sharpness = float(form.get("sharpness", 1.0))
+
+    from app.config import Configuration
+    image_path = os.path.join(Configuration().image_folder_path, image_id)
+    img = Image.open(image_path).convert("RGB")
+
+    # Apply transformations
+    img = ImageEnhance.Brightness(img).enhance(brightness)
+    img = ImageEnhance.Contrast(img).enhance(contrast)
+    img = ImageEnhance.Color(img).enhance(color)
+    img = ImageEnhance.Sharpness(img).enhance(sharpness)
+
+    # Save transformed image
+    transformed_name = f"transformed_{image_id}"
+    output_path = os.path.join("app/static/generated", transformed_name)
+    img.save(output_path)
+
+    return templates.TemplateResponse(
+        "transform_result.html",
+        {
+            "request": request,
+            "image_id": image_id,
+            "original_path": f"/static/imagenet_subset/{image_id}",
+            "transformed_path": f"/static/generated/{transformed_name}",
+            "params": {
+                "brightness": brightness,
+                "contrast": contrast,
+                "color": color,
+                "sharpness": sharpness
+            }
         },
     )

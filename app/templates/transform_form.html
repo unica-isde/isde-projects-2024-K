@@ -1,0 +1,24 @@
+<h2>Apply Transformation to Image</h2>
+<form action="/transform" method="post">
+  <label>Select Image:</label><br>
+  <select name="image_id">
+    {% for image in images %}
+      <option value="{{ image }}">{{ image }}</option>
+    {% endfor %}
+  </select><br><br>
+
+  <label>Brightness:</label>
+  <input type="number" name="brightness" step="0.1" value="1.0"><br>
+
+  <label>Contrast:</label>
+  <input type="number" name="contrast" step="0.1" value="1.0"><br>
+
+  <label>Color:</label>
+  <input type="number" name="color" step="0.1" value="1.0"><br>
+
+  <label>Sharpness:</label>
+  <input type="number" name="sharpness" step="0.1" value="1.0"><br><br>
+
+  <button type="submit">Transform</button>
+</form>
+<a href="/">Back to Home</a>
