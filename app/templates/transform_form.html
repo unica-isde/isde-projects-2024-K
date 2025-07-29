@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
 <h2>Apply Transformation to Image</h2>
 <form action="/transform" method="post">
   <label>Select Image:</label><br>
@@ -22,3 +25,4 @@
   <button type="submit">Transform</button>
 </form>
 <a href="/">Back to Home</a>
+{% endblock %}

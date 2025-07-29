@@ -1,12 +1,14 @@
 import json
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, Query
 from PIL import Image, ImageEnhance
+import base64
 import shutil
 import uuid
 import os
+import io
 import matplotlib.pyplot as plt
 import numpy as np
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.config import Configuration
@@ -57,31 +59,40 @@ async def request_classification(request: Request):
     model_id = form.model_id
     classification_scores = classify_image(model_id=model_id, img_id=image_id)
 
+    # Unique result ID
+    result_id = f"{uuid.uuid4().hex}_{image_id}_{model_id}"
     output_folder = "app/static/downloads"
     os.makedirs(output_folder, exist_ok=True)
 
     # Save JSON
-    with open(os.path.join(output_folder, f"{image_id}.json"), "w") as f:
+    with open(os.path.join(output_folder, f"{result_id}.json"), "w") as f:
         json.dump(classification_scores, f)
 
-    # Save PNG bar chart
+    # Generate plot
     labels = [r[0] for r in classification_scores]
     scores = [r[1] for r in classification_scores]
     plt.figure()
-    plt.barh(labels[::-1], scores[::-1])  # Reverse to show top at top
+    plt.barh(labels[::-1], scores[::-1])
     plt.title("Top-5 Predictions")
     plt.xlabel("Confidence")
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, f"{image_id}.png"))
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.savefig(os.path.join(output_folder, f"{result_id}.png"))
     plt.close()
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
 
     return templates.TemplateResponse(
         "classification_output.html",
         {
             "request": request,
-            "result_id": image_id,
             "image_id": image_id,
+            "model_id": model_id,
             "classification_scores": json.dumps(classification_scores),
+            "chart_data": image_base64,
+            "result_id": result_id,
         },
     )
 
@@ -92,43 +103,68 @@ def upload_form(request : Request):
 
 @app.post("/upload", response_class=HTMLResponse)
 async def handle_upload(request: Request, file: UploadFile = File(...)):
+    # Create unique name and path
     filename = f"{uuid.uuid4().hex}_{file.filename}"
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        # Save uploaded image
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    results = classify_image("resnet18", filename)
+        form_data = await request.form()
+        model_id = form_data.get("model_id", "resnet18")
 
-    # Save results for download
-    result_id = filename  # reuse filename as ID
-    output_folder = "app/static/downloads"
-    os.makedirs(output_folder, exist_ok=True)
+        # Run classification
+        results = classify_image(model_id, filename)
 
-    # 1. Save JSON
-    with open(os.path.join(output_folder, f"{result_id}.json"), "w") as f:
-        json.dump(results, f)
+        # Save results with unique ID
+        result_id = filename
+        output_folder = "app/static/downloads"
+        os.makedirs(output_folder, exist_ok=True)
 
-    # 2. Save Plot
-    labels = [r[0] for r in results]
-    scores = [r[1] for r in results]
-    plt.figure()
-    plt.barh(labels[::-1], scores[::-1])  # horizontal bar chart, highest on top
-    plt.title("Top-5 Predictions")
-    plt.xlabel("Confidence (%)")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, f"{result_id}.png"))
-    plt.close()
+        # Save JSON
+        with open(os.path.join(output_folder, f"{result_id}.json"), "w") as f:
+            json.dump(results, f)
 
-    return templates.TemplateResponse(
-        "upload_result.html",
-        {
-            "request": request,
-            "image_url": f"/static/imagenet_subset/{filename}",
-            "results": results,
-            "result_id": result_id,  # pass this to template
-        },
-    )
+        # Save PNG
+        labels = [r[0] for r in results]
+        scores = [r[1] for r in results]
+        plt.figure()
+        plt.barh(labels[::-1], scores[::-1])
+        plt.title("Top-5 Predictions")
+        plt.xlabel("Confidence (%)")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_folder, f"{result_id}.png"))
+        plt.close()
+
+        return templates.TemplateResponse(
+            "upload_result.html",
+            {
+                "request": request,
+                "image_url": f"/static/imagenet_subset/{filename}",
+                "results": results,
+                "result_id": result_id,
+            },
+        )
+
+    except Exception as e:
+        # Clean up uploaded file
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Optional: log the error on server for debugging
+        print(f"Upload error: {e}")
+
+        # Show error to user
+        return templates.TemplateResponse(
+            "upload_result.html",
+            {
+                "request": request,
+                "error": "An error occurred while processing your image. Please try again with a valid file.",
+            },
+            status_code=400
+        )
 
 @app.get("/histogram", response_class=HTMLResponse)
 def histogram_form(request: Request):
@@ -173,7 +209,6 @@ async def handle_transform(request: Request):
     color = float(form.get("color", 1.0))
     sharpness = float(form.get("sharpness", 1.0))
 
-    from app.config import Configuration
     image_path = os.path.join(Configuration().image_folder_path, image_id)
     img = Image.open(image_path).convert("RGB")
 
@@ -183,9 +218,11 @@ async def handle_transform(request: Request):
     img = ImageEnhance.Color(img).enhance(color)
     img = ImageEnhance.Sharpness(img).enhance(sharpness)
 
-    # Save transformed image
-    transformed_name = f"transformed_{image_id}"
+    # Save with unique name
+    unique_id = uuid.uuid4().hex
+    transformed_name = f"transformed_{unique_id}_{image_id}"
     output_path = os.path.join("app/static/generated", transformed_name)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     img.save(output_path)
 
     return templates.TemplateResponse(
@@ -206,10 +243,12 @@ async def handle_transform(request: Request):
 
 @app.get("/download/json/{result_id}")
 def download_json(result_id: str):
-    path = f"app/static/downloads/{result_id}.json"
-    return FileResponse(path, media_type="application/json", filename="results.json")
+    json_path = os.path.join("app/static/downloads", f"{result_id}.json")
+    return FileResponse(json_path, media_type="application/json", filename="results.json")
+
 
 @app.get("/download/plot/{result_id}")
 def download_plot(result_id: str):
-    path = f"app/static/downloads/{result_id}.png"
-    return FileResponse(path, media_type="image/png", filename="results.png")
+    png_path = os.path.join("app/static/downloads", f"{result_id}.png")
+    return FileResponse(png_path, media_type="image/png", filename="results.png")
+
