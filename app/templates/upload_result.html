@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center;">
+
+    {% if error %}
+        <h2 style="color: red;">Error</h2>
+        <p>{{ error }}</p>
+        <a class="btn btn-primary" href="/upload">Try Again</a>
+    {% else %}
+        <h2>Upload Result</h2>
+        <img src="{{ image_url }}" alt="Uploaded Image" style="max-width: 300px; margin-bottom: 20px;" />
+
+        <h3>Top 5 Predictions</h3>
+        <ul style="list-style: none; padding: 0;">
+            {% for label, score in results %}
+                <li><strong>{{ label }}:</strong> {{ (score * 100) | round(2) }}%</li>
+            {% endfor %}
+        </ul>
+
+        <div style="margin-top: 20px;">
+            <a class="btn btn-outline-primary"
+               href="/download/json/{{ result_id }}"
+               download>
+                Download JSON
+            </a>
+            <a class="btn btn-outline-secondary"
+               href="/download/plot/{{ result_id }}"
+               download>
+                Download Chart
+            </a>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <a class="btn btn-primary" href="/upload">Upload Another</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,37 +1,54 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .large-front-thumbnail {
+        position: relative;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
 
-    <style>
-        .large-front-thumbnail {
-            position: relative;
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
+    .chart-img {
+        display: block;
+        margin: 20px auto;
+        max-width: 100%;
+    }
+</style>
 
-    </style>
-    <div class="row">
-        <div class="col">
-            <div class="card">
-                <img class="large-front-thumbnail"
-                     src="{{ 'static/imagenet_subset/'+image_id }} "
-                     alt={{ image_id }}/>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card">
-                <div class="row">
-                    <canvas id="classificationOutput" style="width: 50%; margin: auto; padding: 20px;"></canvas>
-                    <div class="align-items-center">
-                        <h2 id="waitText"></h2>
-                        </div>
-                    </div>
-                </div>
-                <a class="btn btn-primary" href="/classifications" role="button">Back</a>
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <img class="large-front-thumbnail"
+                 src="{{ 'static/imagenet_subset/' + image_id }}"
+                 alt="{{ image_id }}" />
         </div>
     </div>
-    <script src="{{ "static/graph.js" }}" id="makeGraph" classification_scores="{{classification_scores}}"></script>
-{% endblock %}
+    <div class="col">
+        <div class="card">
+            <h3 style="text-align: center;">Top 5 Predictions</h3>
+            <img class="chart-img"
+                 src="data:image/png;base64,{{ chart_data }}"
+                 alt="Classification Bar Chart" />
 
+            <div style="text-align: center; margin-top: 20px;">
+                <a class="btn btn-primary" href="/classifications" role="button">Back</a>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <a class="btn btn-outline-primary"
+                   href="/download/json/{{ result_id }}"
+                   download>
+                    Download JSON
+                </a>
+                <a class="btn btn-outline-secondary"
+                   href="/download/plot/{{ result_id }}"
+                   download>
+                    Download Chart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -163,3 +163,7 @@ cython_debug/
 
 # this should be downloaded during repo setup
 app/static/imagenet_subset
+
+# Ignore generated images
+app/static/generated/*.png
+app/static/generated/*.JPEG

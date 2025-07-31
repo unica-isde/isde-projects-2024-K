@@ -1,5 +1,14 @@
 # Web server for image classification
+## Contributions Breakdown
 
+| Task               | Lucas | Jaime |
+|--------------------|--------|--------|
+| Upload             |   •    |   •    |
+| Histogram          |        |   •    |
+| Image Transform    |        |   •    |
+| Download Results   |   •    |        |
+| Final Presentation |        |   •    |
+| Polishing          |   •    |        |
 ## Download the repository
 
 Use git to clone the repository:
